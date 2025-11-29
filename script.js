@@ -29,7 +29,9 @@ client.on("message", (topic, message) => {
 
 // Example UI update function
 // ✅ Keep track of all plug powers
+// ✅ Keep track of all plug powers
 const plugPowers = {};
+let totalUpdateTimer = null;
 
 function updatePlugUI(plugId, plugData) {
   const container = document.getElementById("plugs");
@@ -62,8 +64,24 @@ function updatePlugUI(plugId, plugData) {
     <p class="value"><i class="bi bi-clock"></i> Timer: ${plugData.timer} s</p>
   `;
 
-  // ✅ Update total power across all plugs
-  const totalCard = document.getElementById("total");
-  const totalPower = Object.values(plugPowers).reduce((sum, p) => sum + p, 0).toFixed(2);
-  totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W`;
+  // ✅ Debounce total power update (once per second)
+  if (!totalUpdateTimer) {
+    totalUpdateTimer = setTimeout(() => {
+      const totalCard = document.getElementById("total");
+      const totalPower = Object.values(plugPowers)
+        .reduce((sum, p) => sum + p, 0)
+        .toFixed(2);
+
+      // ✅ Add timestamp
+      const now = new Date();
+      const timestamp = now.toLocaleTimeString();
+
+      totalCard.innerHTML = `
+        <i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W
+        <br><small>Last Updated: ${timestamp}</small>
+      `;
+
+      totalUpdateTimer = null; // reset timer
+    }, 1000);
+  }
 }
