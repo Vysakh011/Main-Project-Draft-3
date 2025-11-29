@@ -41,7 +41,7 @@ client.on("message", (topic, message) => {
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
   
-  if (relay === 1) {
+  if (relay === 0) {
     toggle.checked = true;
     status.textContent = "Status: ON";
   } else {
@@ -64,11 +64,11 @@ function toggleRelay() {
   const status = document.getElementById("relayStatus");
 
   if (toggle.checked) {
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
-    status.textContent = "Status: ON";
-  } else {
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
     status.textContent = "Status: OFF";
+  } else {
+    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
+    status.textContent = "Status: ON";
   }
 }
 
