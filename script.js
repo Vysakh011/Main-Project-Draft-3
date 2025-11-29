@@ -29,7 +29,6 @@ client.on("message", (topic, message) => {
 
 // Example UI update function
 // ✅ Keep track of all plug powers
-// ✅ Keep track of all plug powers
 const plugPowers = {};
 let totalUpdateTimer = null;
 
@@ -71,15 +70,7 @@ function updatePlugUI(plugId, plugData) {
       const totalPower = Object.values(plugPowers)
         .reduce((sum, p) => sum + p, 0)
         .toFixed(2);
-
-      // ✅ Add timestamp
-      const now = new Date();
-      const timestamp = now.toLocaleTimeString();
-
-      totalCard.innerHTML = `
-        <i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W
-        <br><small>Last Updated: ${timestamp}</small>
-      `;
+      totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W`;
 
       totalUpdateTimer = null; // reset timer
     }, 1000);
