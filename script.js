@@ -45,7 +45,7 @@ function updatePlugUI(plugId, plugData) {
     container.appendChild(card);
   }
 
-  // Calculate power in Watts
+  // ✅ Calculate power first
   const power = (plugData.voltage * plugData.current).toFixed(2);
 
   card.innerHTML = `
@@ -56,7 +56,7 @@ function updatePlugUI(plugId, plugData) {
     <p class="value"><i class="bi bi-clock"></i> Timer: ${plugData.timer} s</p>
   `;
 
-  // Update total power
+  // ✅ Update total power (currently just last plug’s power)
   const totalCard = document.getElementById("total");
   totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${power} W`;
 }
