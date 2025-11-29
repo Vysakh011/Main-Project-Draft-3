@@ -1,4 +1,7 @@
-// ✅ Use secure WebSocket (WSS) since site is HTTPS
+// ✅ Track all plug powers
+const plugPowers = {};
+let totalUpdateTimer = null;
+
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect", () => {
@@ -9,8 +12,6 @@ client.on("connect", () => {
 client.on("message", (topic, message) => {
   try {
     const data = JSON.parse(message.toString());
-
-    // Accept both formats: nested {data:{...}} or flat {...}
     const plugData = data.data || data;
 
     if (
@@ -19,18 +20,11 @@ client.on("message", (topic, message) => {
       plugData.relay !== undefined
     ) {
       updatePlugUI(data.plug, plugData);
-    } else {
-      console.warn("⚠️ Unrecognized message format:", message.toString());
     }
   } catch (err) {
     console.error("❌ Error parsing message:", err);
   }
 });
-
-// Example UI update function
-// ✅ Keep track of all plug powers
-const plugPowers = {};
-let totalUpdateTimer = null;
 
 function updatePlugUI(plugId, plugData) {
   const container = document.getElementById("plugs");
@@ -41,7 +35,7 @@ function updatePlugUI(plugId, plugData) {
     card.className = "plug-card";
     card.id = `plug-${plugId}`;
 
-    // ✅ Make the entire card clickable
+    // ✅ Make card clickable → detail page
     card.addEventListener("click", () => {
       window.location.href = `plug.html?plug=${plugId}`;
     });
@@ -49,10 +43,7 @@ function updatePlugUI(plugId, plugData) {
     container.appendChild(card);
   }
 
-  // Calculate power in Watts
   const power = (plugData.voltage * plugData.current).toFixed(2);
-
-  // ✅ Store this plug’s power
   plugPowers[plugId] = parseFloat(power);
 
   card.innerHTML = `
@@ -63,16 +54,23 @@ function updatePlugUI(plugId, plugData) {
     <p class="value"><i class="bi bi-clock"></i> Timer: ${plugData.timer} s</p>
   `;
 
-  // ✅ Debounce total power update (once per second)
+  // ✅ Debounced total power update (once per second)
   if (!totalUpdateTimer) {
     totalUpdateTimer = setTimeout(() => {
       const totalCard = document.getElementById("total");
       const totalPower = Object.values(plugPowers)
         .reduce((sum, p) => sum + p, 0)
         .toFixed(2);
-      totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W`;
 
-      totalUpdateTimer = null; // reset timer
+      const now = new Date();
+      const timestamp = now.toLocaleTimeString();
+
+      totalCard.innerHTML = `
+        <i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W
+        <br><small>Last Updated: ${timestamp}</small>
+      `;
+
+      totalUpdateTimer = null;
     }, 1000);
   }
 }
