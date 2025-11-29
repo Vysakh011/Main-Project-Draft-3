@@ -1,48 +1,47 @@
-// plug.js
+// ✅ Get plugId from URL query string
+const urlParams = new URLSearchParams(window.location.search);
+const currentPlugId = parseInt(urlParams.get("plug"), 10);
+
+// ✅ Connect to MQTT broker
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect", () => {
-  console.log("MQTT connected");
+  console.log("✅ Connected to MQTT broker over WSS");
   client.subscribe("smart/plug/data");
 });
 
 client.on("message", (topic, message) => {
-  const msg = message.toString();
-  console.log("MQTT DATA:", msg);
-
-  // ✅ Parse JSON payload from hub
-  let data;
   try {
-    data = JSON.parse(msg);
-  } catch (e) {
-    console.error("Invalid JSON:", msg);
-    return;
-  }
+    const data = JSON.parse(message.toString());
+    const plugData = data.data || data;
 
-  const plugId = data.plug;
-  const voltage = data.voltage;
-  const current = data.current;
-  const relay = data.relay;
-  const timer = data.timer;
-  // Power calculation in Watts
-  const power = voltage * current;
-  // Update live card
+    // ✅ Only update if this is the selected plug
+    if (data.plug === currentPlugId) {
+      updatePlugUI(currentPlugId, plugData);
+    }
+  } catch (err) {
+    console.error("❌ Error parsing message:", err);
+  }
+});
+
+// ================= UI UPDATE =================
+function updatePlugUI(plugId, plugData) {
   const container = document.getElementById("plugData");
+  const power = (plugData.voltage * plugData.current).toFixed(2);
+
   container.innerHTML = `
-    <div class="plug-card">
-      <h2>Plug ${plugId}</h2>
-      <p class="value"><i class="bi bi-battery"></i> Voltage: ${voltage.toFixed(1)} V</p>
-      <p class="value"><i class="bi bi-lightning"></i> Current: ${current.toFixed(3)} A</p>
-      <p class="value"><i class="bi bi-plug"></i> Power: ${power.toFixed(2)} W</p>
-      <p class="value"><i class="bi bi-clock"></i> Timer: ${timer} sec</p>
-    </div>
+    <h2>Plug ${plugId}</h2>
+    <p class="value"><i class="bi bi-battery"></i> Voltage: ${plugData.voltage} V</p>
+    <p class="value"><i class="bi bi-lightning"></i> Current: ${plugData.current} A</p>
+    <p class="value"><i class="bi bi-plug"></i> Power: ${power} W</p>
+    <p class="value"><i class="bi bi-clock"></i> Timer: ${plugData.timer} s</p>
   `;
 
-  // ✅ Sync toggle with relay state
+  // ✅ Sync toggle with relay state (inverted logic)
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
-  
-  if (relay === 0) {
+
+  if (plugData.relay === 0) {
     toggle.checked = true;
     status.textContent = "Status: ON";
   } else {
@@ -52,23 +51,24 @@ client.on("message", (topic, message) => {
 
   // ✅ Show timer countdown if active
   const timerDisplay = document.getElementById("timerDisplay");
-  if (timer > 0) {
-    timerDisplay.textContent = `Timer Running: ${timer} sec left`;
+  if (plugData.timer > 0) {
+    timerDisplay.textContent = `Timer Running: ${plugData.timer} sec left`;
   } else {
     timerDisplay.textContent = "";
   }
-});
+}
 
 // ================= CONTROL FUNCTIONS =================
 function toggleRelay() {
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
 
+  // Inverted mapping: checked → relay OFF, unchecked → relay ON
   if (toggle.checked) {
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
+    client.publish("smart/plug/cmd", JSON.stringify({ plug: currentPlugId, cmd: "off" }));
     status.textContent = "Status: OFF";
   } else {
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
+    client.publish("smart/plug/cmd", JSON.stringify({ plug: currentPlugId, cmd: "on" }));
     status.textContent = "Status: ON";
   }
 }
@@ -80,7 +80,10 @@ function sendTimer() {
   const totalSec = h * 3600 + m * 60 + s;
 
   if (totalSec > 0) {
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "timer", seconds: totalSec }));
+    client.publish(
+      "smart/plug/cmd",
+      JSON.stringify({ plug: currentPlugId, cmd: "timer", seconds: totalSec })
+    );
     document.getElementById("timerDisplay").textContent = `Timer Started: ${totalSec} sec`;
 
     // ✅ Force toggle ON when timer starts
