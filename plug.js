@@ -24,7 +24,8 @@ client.on("message", (topic, message) => {
   const current = data.current;
   const relay = data.relay;
   const timer = data.timer;
-
+  // Power calculation in Watts
+  const power = voltage * current;
   // Update live card
   const container = document.getElementById("plugData");
   container.innerHTML = `
@@ -32,7 +33,7 @@ client.on("message", (topic, message) => {
       <h2>Plug ${plugId}</h2>
       <p class="value"><i class="bi bi-battery"></i> Voltage: ${voltage.toFixed(1)} V</p>
       <p class="value"><i class="bi bi-lightning"></i> Current: ${current.toFixed(3)} A</p>
-      <p class="value"><i class="bi bi-power"></i> Relay: ${relay === 1 ? "ON" : "OFF"}</p>
+      <p class="value"><i class="bi bi-plug"></i> Power: ${power.toFixed(2)} W</p>
       <p class="value"><i class="bi bi-clock"></i> Timer: ${timer} sec</p>
     </div>
   `;
