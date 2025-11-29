@@ -28,6 +28,9 @@ client.on("message", (topic, message) => {
 });
 
 // Example UI update function
+// ✅ Keep track of all plug powers
+const plugPowers = {};
+
 function updatePlugUI(plugId, plugData) {
   const container = document.getElementById("plugs");
   let card = document.getElementById(`plug-${plugId}`);
@@ -45,8 +48,11 @@ function updatePlugUI(plugId, plugData) {
     container.appendChild(card);
   }
 
-  // ✅ Calculate power first
+  // Calculate power in Watts
   const power = (plugData.voltage * plugData.current).toFixed(2);
+
+  // ✅ Store this plug’s power
+  plugPowers[plugId] = parseFloat(power);
 
   card.innerHTML = `
     <h2>Plug ${plugId}</h2>
@@ -56,7 +62,8 @@ function updatePlugUI(plugId, plugData) {
     <p class="value"><i class="bi bi-clock"></i> Timer: ${plugData.timer} s</p>
   `;
 
-  // ✅ Update total power (currently just last plug’s power)
+  // ✅ Update total power across all plugs
   const totalCard = document.getElementById("total");
-  totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${power} W`;
+  const totalPower = Object.values(plugPowers).reduce((sum, p) => sum + p, 0).toFixed(2);
+  totalCard.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Total Power: ${totalPower} W`;
 }
