@@ -29,6 +29,7 @@ client.on("message", (topic, message) => {
 
 // Example UI update function
 // ✅ Keep track of all plug powers
+// ✅ Keep track of all plug powers
 const plugPowers = {};
 let totalUpdateTimer = null;
 
