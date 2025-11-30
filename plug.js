@@ -1,18 +1,12 @@
 // plug.js
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-
-// ✅ Track if timer was just started
-let timerJustStarted = false;
-
 client.on("connect", () => {
   console.log("MQTT connected");
   client.subscribe("smart/plug/data");
 });
-
 client.on("message", (topic, message) => {
   const msg = message.toString();
   console.log("MQTT DATA:", msg);
-  
   // ✅ Parse JSON payload from hub
   let data;
   try {
@@ -21,19 +15,16 @@ client.on("message", (topic, message) => {
     console.error("Invalid JSON:", msg);
     return;
   }
-
   const plugId = data.plug;
   const voltage = data.voltage;
   const current = data.current;
   const relay = data.relay;
   const timer = data.timer;
-
   // Power calculation in Watts
   const power = voltage * current;
-
   // Update live card
   const container = document.getElementById("plugData");
-  container.innerHTML = `
+  container.innerHTML = 
     <div class="plug-card">
       <h2>Plug ${plugId}</h2>
       <p class="value"><i class="bi bi-battery"></i> Voltage: ${voltage.toFixed(1)} V</p>
@@ -41,12 +32,11 @@ client.on("message", (topic, message) => {
       <p class="value"><i class="bi bi-plug"></i> Power: ${power.toFixed(2)} W</p>
       <p class="value"><i class="bi bi-clock"></i> Timer: ${timer} sec</p>
     </div>
-  `;
-
-  // ✅ Original toggle logic - relay 0 = ON (unchanged)
+  ;
+  // ✅ Sync toggle with relay state
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
-  
+
   if (relay === 0) {
     toggle.checked = true;
     status.textContent = "Status: ON";
@@ -54,31 +44,18 @@ client.on("message", (topic, message) => {
     toggle.checked = false;
     status.textContent = "Status: OFF";
   }
-
   // ✅ Show timer countdown if active
   const timerDisplay = document.getElementById("timerDisplay");
   if (timer > 0) {
-    timerDisplay.textContent = `Timer Running: ${timer} sec left`;
-    // Keep toggle ON while timer is running
-    toggle.checked = true;
-    status.textContent = "Status: ON";
-    // Clear the flag once we receive timer data
-    timerJustStarted = false;
-  } else if (timerJustStarted) {
-    // Timer just started but data hasn't arrived yet - keep toggle ON
-    toggle.checked = true;
-    status.textContent = "Status: ON";
-    timerDisplay.textContent = "Timer starting...";
+    timerDisplay.textContent = Timer Running: ${timer} sec left;
   } else {
     timerDisplay.textContent = "";
   }
 });
-
 // ================= CONTROL FUNCTIONS =================
 function toggleRelay() {
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
-  
   if (toggle.checked) {
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
     status.textContent = "Status: OFF";
@@ -87,21 +64,14 @@ function toggleRelay() {
     status.textContent = "Status: ON";
   }
 }
-
 function sendTimer() {
   const h = parseInt(document.getElementById("hours").value);
   const m = parseInt(document.getElementById("minutes").value);
   const s = parseInt(document.getElementById("seconds").value);
-  
   const totalSec = h * 3600 + m * 60 + s;
-  
   if (totalSec > 0) {
-    // ✅ Set flag BEFORE sending command
-    timerJustStarted = true;
-    
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "timer", seconds: totalSec }));
-    document.getElementById("timerDisplay").textContent = `Timer Started: ${totalSec} sec`;
-    
+    document.getElementById("timerDisplay").textContent = Timer Started: ${totalSec} sec;
     // ✅ Force toggle ON when timer starts
     const toggle = document.getElementById("relayToggle");
     toggle.checked = true;
