@@ -43,7 +43,7 @@ client.on("message", (topic, message) => {
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
   
-  if (relay === 1) {
+  if (relay === 0) {
     // Relay is ON
     toggle.checked = true;
     status.textContent = "Status: ON";
