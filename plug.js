@@ -1,6 +1,5 @@
 // plug.js
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-
 client.on("connect", () => {
   console.log("MQTT connected");
   client.subscribe("smart/plug/data");
@@ -9,7 +8,7 @@ client.on("connect", () => {
 client.on("message", (topic, message) => {
   const msg = message.toString();
   console.log("MQTT DATA:", msg);
-
+  
   // ✅ Parse JSON payload from hub
   let data;
   try {
@@ -24,8 +23,10 @@ client.on("message", (topic, message) => {
   const current = data.current;
   const relay = data.relay;
   const timer = data.timer;
+
   // Power calculation in Watts
   const power = voltage * current;
+
   // Update live card
   const container = document.getElementById("plugData");
   container.innerHTML = `
@@ -38,14 +39,16 @@ client.on("message", (topic, message) => {
     </div>
   `;
 
-  // ✅ Sync toggle with relay state
+  // ✅ FIXED: Sync toggle with relay state
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
   
-  if (relay === 0) {
+  if (relay === 1) {
+    // Relay is ON
     toggle.checked = true;
     status.textContent = "Status: ON";
   } else {
+    // Relay is OFF
     toggle.checked = false;
     status.textContent = "Status: OFF";
   }
@@ -63,13 +66,15 @@ client.on("message", (topic, message) => {
 function toggleRelay() {
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
-
+  
   if (toggle.checked) {
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
-    status.textContent = "Status: OFF";
-  } else {
+    // Toggle is ON, turn relay ON
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
     status.textContent = "Status: ON";
+  } else {
+    // Toggle is OFF, turn relay OFF
+    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
+    status.textContent = "Status: OFF";
   }
 }
 
@@ -77,12 +82,13 @@ function sendTimer() {
   const h = parseInt(document.getElementById("hours").value);
   const m = parseInt(document.getElementById("minutes").value);
   const s = parseInt(document.getElementById("seconds").value);
+  
   const totalSec = h * 3600 + m * 60 + s;
-
+  
   if (totalSec > 0) {
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "timer", seconds: totalSec }));
     document.getElementById("timerDisplay").textContent = `Timer Started: ${totalSec} sec`;
-
+    
     // ✅ Force toggle ON when timer starts
     const toggle = document.getElementById("relayToggle");
     toggle.checked = true;
