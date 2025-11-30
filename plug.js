@@ -39,16 +39,14 @@ client.on("message", (topic, message) => {
     </div>
   `;
 
-  // ✅ FIXED: Sync toggle with relay state
+  // ✅ Original toggle logic - relay 0 = ON (unchanged)
   const toggle = document.getElementById("relayToggle");
   const status = document.getElementById("relayStatus");
   
   if (relay === 0) {
-    // Relay is ON
     toggle.checked = true;
     status.textContent = "Status: ON";
   } else {
-    // Relay is OFF
     toggle.checked = false;
     status.textContent = "Status: OFF";
   }
@@ -57,6 +55,9 @@ client.on("message", (topic, message) => {
   const timerDisplay = document.getElementById("timerDisplay");
   if (timer > 0) {
     timerDisplay.textContent = `Timer Running: ${timer} sec left`;
+    // Keep toggle ON while timer is running
+    toggle.checked = true;
+    status.textContent = "Status: ON";
   } else {
     timerDisplay.textContent = "";
   }
@@ -68,13 +69,11 @@ function toggleRelay() {
   const status = document.getElementById("relayStatus");
   
   if (toggle.checked) {
-    // Toggle is ON, turn relay ON
-    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
-    status.textContent = "Status: ON";
-  } else {
-    // Toggle is OFF, turn relay OFF
     client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "off" }));
     status.textContent = "Status: OFF";
+  } else {
+    client.publish("smart/plug/cmd", JSON.stringify({ plug: 1, cmd: "on" }));
+    status.textContent = "Status: ON";
   }
 }
 
